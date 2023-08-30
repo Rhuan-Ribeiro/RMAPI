@@ -9,7 +9,30 @@ class CharacterAPIView(APIView):
         # se o get não tiver filtro de id:
         # retorna todos os characters
         if (characterId == ''):
-            characterFound = Character.objects.all()
+            characterFound = ''
+            # se passarem o filtro de 'name' 
+            if ('name' in request.GET and 'species' in request.GET):
+                nameToFilter = request.GET['name']
+                speciesToFilter = request.GET['species']
+                # LÓGICA AND
+                characterFound = Character.objects.filter(name__contains=nameToFilter).filter(species__contains=speciesToFilter)
+                # LÓGICA OR
+                # characterFound = Character.objects.filter(name__contains=nameToFilter) | Character.objects.filter(species__contains=speciesToFilter)
+
+            elif ('name' in request.GET):
+                # pegando o parametro que foi informado!
+                nameToFilter = request.GET['name']
+                # criando um filtro para a busca
+                characterFound = Character.objects.filter(name__contains=nameToFilter)
+                    # __contains é reservado no Django, é o equivalente ao like do mySQL
+                    # name__startWith=nameToFilter
+                    # name__endWith=nameToFilter
+            elif ('species' in request.GET):
+                speciesToFilter = request.GET['species']
+                characterFound = Character.objects.filter(species__contains=speciesToFilter)
+            else:
+                characterFound = Character.objects.all()
+
             serializer = CharacterSerializer(characterFound, many=True)
             return Response(serializer.data)
         # se tiver, vai tentar buscar pelo id:
@@ -79,6 +102,32 @@ class LocationAPIView(APIView):
         serializer = LocationSerializer(locationFound, many=False)
         return Response(serializer.data)
     
+    def post(self, request):
+        locationJson = request.data
+        locationSerialized = LocationSerializer(data=locationJson, many=False)
+        if (locationSerialized.is_valid()):
+            locationSerialized.save()
+            return Response(status=201, data=locationSerialized.data)
+        return Response(status=400, data="error")
+    
+    def delete(self, request, locationId = ''):
+        if (locationId != ''):
+            locationFound = Location.objects.get(id=locationId)
+            locationFound.delete()
+            return Response(status=200, data='Character sucessfully deleted!')
+        return Response(status=400, data='characterid must be given!')
+    
+    def put(self, request, locationId = ''):
+        if(locationId != ''):
+            locationFound = Location.objects.get(id=locationId)
+            locationToUpdateJSON = request.data
+            serializedLocation = CharacterSerializer(locationFound, data=locationToUpdateJSON)
+            if (serializedLocation.is_valid()):
+                serializedLocation.save()
+                return Response(status=200, data=serializedLocation.data)
+            return Response(status=400, data='Invalid Data!')
+        return Response(status=400, data='characterId must be given!')
+    
 class EpisodeAPIView(APIView):
     def get(self, request, epId = ''):
         if (epId == ''):
@@ -89,6 +138,32 @@ class EpisodeAPIView(APIView):
         serializer = LocationSerializer(epFound, many=False)
         return Response(serializer.data)
     
+    def post(self, request):
+        epJson = request.data
+        epSerialized = EpisodeSerializer(data=epJson, many=False)
+        if (epSerialized.is_valid()):
+            epSerialized.save()
+            return Response(status=201, data=epSerialized.data)
+        return Response(status=400, data="error")
+    
+    def delete(self, request, epId = ''):
+        if (epId != ''):
+            epFound = Episode.objects.get(id=epId)
+            epFound.delete()
+            return Response(status=200, data='Character sucessfully deleted!')
+        return Response(status=400, data='characterid must be given!')
+    
+    def put(self, request, epId = ''):
+        if(epId != ''):
+            epFound = Episode.objects.get(id=epId)
+            epToUpdateJSON = request.data
+            serializedEpisode = EpisodeSerializer(epFound, data=epToUpdateJSON)
+            if (serializedEpisode.is_valid()):
+                serializedEpisode.save()
+                return Response(status=200, data=serializedEpisode.data)
+            return Response(status=400, data='Invalid Data!')
+        return Response(status=400, data='characterId must be given!')
+    
 class Character_EpisodeAPIView(APIView):
     def get(self, request, chracter_epId = ''):
         if (chracter_epId == ''):
@@ -98,3 +173,5 @@ class Character_EpisodeAPIView(APIView):
         chracter_epFound = Characters_Episode.objects.get(id=chracter_epId)
         serializer = Characters_EpisodeSerializer(chracter_epFound, many=False)
         return Response(serializer.data)
+    
+    
